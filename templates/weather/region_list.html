@@ -6,7 +6,7 @@
 {% for region in regions %}
     <a href="{% url 'region_detail' region.pk %}" class="list-group-item list-group-item-action d-flex justify-content-between">
         <span>{{ region.name }}</span>
-        <span class="badge bg-secondary">{{ region.climate_zone }}</span>
+        <span class="badge bg-secondary">{{ region.get_climate_zone_display }}</span>
     </a>
 {% endfor %}
 </div>
