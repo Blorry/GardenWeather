@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+{% block title %}{{ culture.name }}{% endblock %}
+{% block content %}
+<a href="{% url 'culture_list' %}" class="btn btn-link">← К каталогу</a>
+<h1>{{ culture.name }}</h1>
+{% if culture.image %}<img src="{{ culture.image.url }}" class="img-fluid mb-3" style="max-height:300px">{% endif %}
+<p>{{ culture.description }}</p>
+<ul>
+    <li>Температура посадки: <strong>{{ culture.min_planting_temp }}–{{ culture.max_planting_temp }} °C</strong></li>
+    <li>Дней вегетации: <strong>{{ culture.vegetation_days }}</strong></li>
+</ul>
+{% endblock %}

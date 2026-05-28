@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+{% block title %}Регионы{% endblock %}
+{% block content %}
+<h1 class="mb-4">Регионы</h1>
+<div class="list-group">
+{% for region in regions %}
+    <a href="{% url 'region_detail' region.pk %}" class="list-group-item list-group-item-action d-flex justify-content-between">
+        <span>{{ region.name }}</span>
+        <span class="badge bg-secondary">{{ region.climate_zone }}</span>
+    </a>
+{% endfor %}
+</div>
+{% endblock %}
