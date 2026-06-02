@@ -10,4 +10,5 @@ urlpatterns = [
     path('plots/new/', views.plot_create, name='plot_create'),
     path('plots/<int:pk>/edit/', views.plot_edit, name='plot_edit'),
     path('plots/<int:pk>/delete/', views.plot_delete, name='plot_delete'),
+    path('accounts/logout-confirm/', views.logout_confirm, name='logout_confirm'),
 ]

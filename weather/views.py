@@ -87,3 +87,5 @@ def plot_delete(request, pk):
         plot.delete()
         return redirect('plot_list')
     return render(request, 'weather/plot_confirm_delete.html', {'plot': plot})
+def logout_confirm(request):
+    return render(request, 'registration/logout_confirm.html')

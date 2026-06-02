@@ -1,0 +1,10 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="card p-4" style="max-width:400px; margin:auto">
+    <h3>Выйти из аккаунта?</h3>
+    <form method="post" action="{% url 'logout' %}">{% csrf_token %}
+        <button class="btn btn-danger" type="submit">Да, выйти</button>
+        <a href="{% url 'culture_list' %}" class="btn btn-link">Отмена</a>
+    </form>
+</div>
+{% endblock %}

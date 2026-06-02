@@ -16,6 +16,17 @@
             <li class="nav-item"><a class="nav-link" href="{% url 'culture_list' %}">Культуры</a></li>
             <li class="nav-item"><a class="nav-link" href="{% url 'region_list' %}">Регионы</a></li>
         </ul>
+        <ul class="navbar-nav">
+            {% if user.is_authenticated %}
+                <li class="nav-item"><a class="nav-link" href="{% url 'plot_list' %}">Мои участки</a></li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'logout_confirm' %}">Выйти ({{ user.username }})</a>
+                </li>
+            {% else %}
+                <li class="nav-item"><a class="nav-link" href="{% url 'login' %}">Войти</a></li>
+                <li class="nav-item"><a class="nav-link" href="{% url 'register' %}">Регистрация</a></li>
+            {% endif %}
+        </ul>
     </div>
 </nav>
 <main class="container my-4">

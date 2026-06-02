@@ -32,3 +32,56 @@ class GardenPlotForm(forms.ModelForm):
         if len(name) < 2:
             raise forms.ValidationError('Название должно содержать минимум 2 символа.')
         return name
+from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.models import User
+
+
+import re
+from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.models import User
+
+USERNAME_PATTERN = re.compile(r'^[a-zA-Z0-9_-]{3,30}$')
+
+
+class RegisterForm(UserCreationForm):
+    email = forms.EmailField(
+        required=True,
+        widget=forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'example@mail.ru'}),
+        label='Email',
+    )
+
+    class Meta:
+        model = User
+        fields = ('username', 'email', 'password1', 'password2')
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self.fields.values():
+            field.widget.attrs.setdefault('class', 'form-control')
+        self.fields['username'].label = 'Логин'
+        self.fields['username'].help_text = (
+            'От 3 до 30 символов: латинские буквы, цифры, символы _ или -.'
+        )
+        self.fields['password1'].label = 'Пароль'
+        self.fields['password2'].label = 'Повтор пароля'
+
+    def clean_username(self):
+        username = self.cleaned_data['username'].strip()
+        if not USERNAME_PATTERN.match(username):
+            raise forms.ValidationError(
+                'Логин должен содержать 3–30 символов: только латинские буквы, цифры, _ или -.'
+            )
+        return username
+
+    def clean_email(self):
+        email = self.cleaned_data['email'].lower().strip()
+        if User.objects.filter(email__iexact=email).exists():
+            raise forms.ValidationError('Пользователь с таким email уже зарегистрирован.')
+        return email
+
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        user.email = self.cleaned_data['email']
+        if commit:
+            user.save()
+        return user
