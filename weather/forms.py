@@ -1,21 +1,25 @@
 from django import forms
-from .models import GardenPlot
+from .models import GardenPlot, Planting
+from django.utils import timezone
+import re
+from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.models import User
 
 
 class GardenPlotForm(forms.ModelForm):
     class Meta:
         model = GardenPlot
-        fields = ['name', 'region', 'cultures', 'area']
+        fields = ['name', 'region', 'soil_type', 'area']
         widgets = {
             'name': forms.TextInput(attrs={'class': 'form-control'}),
             'region': forms.Select(attrs={'class': 'form-select'}),
-            'cultures': forms.CheckboxSelectMultiple(),
+            'soil_type': forms.Select(attrs={'class': 'form-select'}),
             'area': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.1'}),
         }
         labels = {
             'name': 'Название участка',
             'region': 'Регион',
-            'cultures': 'Культуры',
+            'soil_type': 'Тип почвы на участке',
             'area': 'Площадь, сот.',
         }
 
@@ -32,11 +36,6 @@ class GardenPlotForm(forms.ModelForm):
         if len(name) < 2:
             raise forms.ValidationError('Название должно содержать минимум 2 символа.')
         return name
-from django.contrib.auth.forms import UserCreationForm
-from django.contrib.auth.models import User
-
-
-import re
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 
@@ -85,3 +84,31 @@ class RegisterForm(UserCreationForm):
         if commit:
             user.save()
         return user
+
+class PlantingForm(forms.ModelForm):
+    class Meta:
+        model = Planting
+        fields = ['culture', 'status', 'planted_date']
+        widgets = {
+            'culture': forms.Select(attrs={'class': 'form-select'}),
+            'status': forms.Select(attrs={'class': 'form-select'}),
+            'planted_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+        }
+        labels = {
+            'culture': 'Культура',
+            'status': 'Статус',
+            'planted_date': 'Дата посадки',
+        }
+
+    def clean(self):
+        cleaned = super().clean()
+        status = cleaned.get('status')
+        planted_date = cleaned.get('planted_date')
+        if status == Planting.Status.PLANTED:
+            if not planted_date:
+                cleaned['planted_date'] = timezone.now().date()  # не указали — считаем сегодня
+            elif planted_date > timezone.now().date():
+                self.add_error('planted_date', 'Дата посадки не может быть в будущем.')
+        else:
+            cleaned['planted_date'] = None  # «планируется» — даты посадки нет
+        return cleaned

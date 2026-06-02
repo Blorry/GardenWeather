@@ -6,8 +6,8 @@ from django.db.models import Count
 from django.shortcuts import render, get_object_or_404, redirect
 from django.utils import timezone
 
-from .forms import GardenPlotForm
-from .models import Culture, Region, WeatherRecord, GardenPlot
+from .forms import GardenPlotForm, PlantingForm
+from .models import Culture, Region, WeatherRecord, GardenPlot, Planting
 from .services.analytics import to_dataframe, region_stats
 
 
@@ -46,7 +46,14 @@ def region_detail(request, pk):
             labels={'value': '°C', 'date': 'Дата', 'variable': 'Показатель'},
             title=f'Температура: {region.name}',
         )
+        legend_names = {
+            'temp_min': 'Мин. температура',
+            'temp_max': 'Макс. температура',
+            'rolling_avg': 'Скользящее среднее',
+        }
+        fig.for_each_trace(lambda t: t.update(name=legend_names[t.name]))
         fig.update_layout(template='plotly_white', height=400)
+        fig.update_xaxes(tickformat='%d.%m', dtick='D1')
         chart_html = fig.to_html(full_html=False, include_plotlyjs='cdn')
 
     stats = region_stats(records)
@@ -71,10 +78,26 @@ def plot_list(request):
 @login_required
 def plot_detail(request, pk):
     plot = get_object_or_404(GardenPlot, pk=pk, user=request.user)
+
+    if request.method == 'POST':
+        form = PlantingForm(request.POST)
+        if form.is_valid():
+            culture = form.cleaned_data['culture']
+            if not Planting.objects.filter(plot=plot, culture=culture).exists():
+                planting = form.save(commit=False)
+                planting.plot = plot
+                planting.save()
+            return redirect('plot_detail', pk=plot.pk)
+    else:
+        form = PlantingForm()
+
+    plantings = plot.plantings.select_related('culture')
     recommendations = plot.recommendations.select_related('culture').order_by('-priority', '-created_at')
     return render(request, 'weather/plot_detail.html', {
         'plot': plot,
+        'plantings': plantings,
         'recommendations': recommendations,
+        'form': form,
     })
 
 
@@ -116,3 +139,25 @@ def plot_delete(request, pk):
 
 def logout_confirm(request):
     return render(request, 'registration/logout_confirm.html')
+
+@login_required
+def planting_toggle(request, pk):
+    planting = get_object_or_404(Planting, pk=pk, plot__user=request.user)
+    if request.method == 'POST':
+        if planting.status == Planting.Status.PLANNED:
+            planting.status = Planting.Status.PLANTED
+            planting.planted_date = timezone.now().date()
+        else:
+            planting.status = Planting.Status.PLANNED
+            planting.planted_date = None
+        planting.save()
+    return redirect('plot_detail', pk=planting.plot.pk)
+
+
+@login_required
+def planting_delete(request, pk):
+    planting = get_object_or_404(Planting, pk=pk, plot__user=request.user)
+    plot_pk = planting.plot.pk
+    if request.method == 'POST':
+        planting.delete()
+    return redirect('plot_detail', pk=plot_pk)

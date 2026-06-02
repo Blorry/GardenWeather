@@ -3,22 +3,91 @@
 {% block content %}
 <a href="{% url 'plot_list' %}" class="btn btn-link">← К списку участков</a>
 <h1>{{ plot.name }}</h1>
-<p class="text-muted">{{ plot.region.name }} · {{ plot.area }} сот.</p>
+
+<p class="text-muted">
+    {{ plot.region.name }} · {{ plot.area }} сот. ·
+    почва участка: {{ plot.get_soil_type_display }}
+</p>
+<p class="text-muted small">
+    Типичная почва региона: {{ plot.region.get_soil_type_display }}
+</p>
+
+<h3 class="mt-4">Культуры на участке</h3>
+<div class="row g-2 mb-3">
+{% for p in plantings %}
+    <div class="col-md-6">
+        <div class="card p-3 d-flex flex-row justify-content-between align-items-center">
+            <div>
+                <strong>{{ p.culture.name }}</strong>
+                {% if p.status == 'planted' %}
+                    <span class="badge bg-success">Посажено{% if p.planted_date %} · {{ p.planted_date|date:"d.m.Y" }}{% endif %}</span>
+                {% else %}
+                    <span class="badge bg-secondary">Планируется</span>
+                {% endif %}
+                {% if p.expected_harvest %}
+                    <span class="badge bg-info text-dark">🌾 сбор ~ {{ p.expected_harvest|date:"d.m.Y" }}</span>
+                {% endif %}
+            </div>
+            <div class="d-flex gap-1">
+                <form method="post" action="{% url 'planting_toggle' p.pk %}">{% csrf_token %}
+                    <button class="btn btn-sm btn-outline-primary" type="submit">
+                        {% if p.status == 'planted' %}Вернуть в план{% else %}Отметить посаженным{% endif %}
+                    </button>
+                </form>
+                <form method="post" action="{% url 'planting_delete' p.pk %}">{% csrf_token %}
+                    <button class="btn btn-sm btn-outline-danger" type="submit">✕</button>
+                </form>
+            </div>
+        </div>
+    </div>
+{% empty %}
+    <p class="text-muted">Культуры ещё не добавлены.</p>
+{% endfor %}
+</div>
+
+<form method="post" class="row g-2 mb-4 align-items-end">{% csrf_token %}
+    <div class="col-md-3">
+        <label class="form-label small mb-1">Культура</label>
+        {{ form.culture }}
+    </div>
+    <div class="col-md-3">
+        <label class="form-label small mb-1">Статус</label>
+        {{ form.status }}
+    </div>
+    <div class="col-md-3">
+        <label class="form-label small mb-1">Дата посадки</label>
+        {{ form.planted_date }}
+    </div>
+    <div class="col-md-3">
+        <button class="btn btn-success w-100" type="submit">Добавить культуру</button>
+    </div>
+    {% if form.errors %}
+        <div class="col-12 text-danger small">
+            {{ form.non_field_errors }}{{ form.planted_date.errors }}
+        </div>
+    {% endif %}
+</form>
 
 <h3 class="mt-4">Рекомендации ({{ recommendations|length }})</h3>
 {% for r in recommendations %}
     <div class="card p-3 mb-2 recommendation-{% if r.priority == 3 %}high{% elif r.priority == 2 %}medium{% else %}low{% endif %}">
         <div class="d-flex justify-content-between align-items-start">
             <strong>{{ r.culture.name }}</strong>
-            <span class="badge bg-secondary">{{ r.get_priority_display }}</span>
+                        {% if r.priority == 3 %}
+                <span class="badge bg-danger">⚠️ Срочно</span>
+            {% elif r.priority == 2 %}
+                <span class="badge bg-warning text-dark">Рекомендуем</span>
+            {% else %}
+                <span class="badge bg-success">К сведению</span>
+            {% endif %}
         </div>
         <p class="mb-1 mt-2">{{ r.text }}</p>
         <small class="text-muted">{{ r.created_at|date:"d.m.Y H:i" }}</small>
     </div>
 {% empty %}
     <div class="alert alert-info">
-        Пока нет рекомендаций. Запустите команду <code>python manage.py generate_recommendations</code>
-        в терминале, чтобы сгенерировать их по текущему прогнозу.
+        Рекомендаций пока нет. Добавьте культуры и запустите команду
+        <code>python manage.py generate_recommendations</code>.
     </div>
 {% endfor %}
 {% endblock %}
