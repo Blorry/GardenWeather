@@ -1,12 +1,17 @@
 from datetime import timedelta
+
 import plotly.express as px
 from django.contrib.auth.decorators import login_required
+from django.db.models import Count
 from django.shortcuts import render, get_object_or_404, redirect
 from django.utils import timezone
+
 from .forms import GardenPlotForm
 from .models import Culture, Region, WeatherRecord, GardenPlot
 from .services.analytics import to_dataframe, region_stats
 
+
+# ---------- Каталог культур ----------
 
 def culture_list(request):
     query = request.GET.get('q', '').strip()
@@ -20,6 +25,8 @@ def culture_detail(request, pk):
     culture = get_object_or_404(Culture, pk=pk)
     return render(request, 'weather/culture_detail.html', {'culture': culture})
 
+
+# ---------- Регионы и погода ----------
 
 def region_list(request):
     regions = Region.objects.all()
@@ -49,10 +56,26 @@ def region_detail(request, pk):
     })
 
 
+# ---------- Личный кабинет: участки ----------
+
 @login_required
 def plot_list(request):
-    plots = GardenPlot.objects.filter(user=request.user).select_related('region')
+    plots = (GardenPlot.objects
+             .filter(user=request.user)
+             .select_related('region')
+             .prefetch_related('cultures')
+             .annotate(rec_count=Count('recommendations')))
     return render(request, 'weather/plot_list.html', {'plots': plots})
+
+
+@login_required
+def plot_detail(request, pk):
+    plot = get_object_or_404(GardenPlot, pk=pk, user=request.user)
+    recommendations = plot.recommendations.select_related('culture').order_by('-priority', '-created_at')
+    return render(request, 'weather/plot_detail.html', {
+        'plot': plot,
+        'recommendations': recommendations,
+    })
 
 
 @login_required
@@ -87,5 +110,9 @@ def plot_delete(request, pk):
         plot.delete()
         return redirect('plot_list')
     return render(request, 'weather/plot_confirm_delete.html', {'plot': plot})
+
+
+# ---------- Подтверждение выхода ----------
+
 def logout_confirm(request):
     return render(request, 'registration/logout_confirm.html')

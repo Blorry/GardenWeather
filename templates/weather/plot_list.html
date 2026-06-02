@@ -9,7 +9,10 @@
 {% for plot in plots %}
     <div class="col-md-6">
         <div class="card p-3">
-            <h5>{{ plot.name }}</h5>
+            <h5><a href="{% url 'plot_detail' plot.pk %}" class="text-decoration-none text-dark">{{ plot.name }}</a></h5>
+            {% if plot.rec_count %}
+            <span class="badge bg-warning text-dark">{{ plot.rec_count }} реком.</span>
+            {% endif %}
             <p class="mb-1 small text-muted">{{ plot.region.name }} · {{ plot.area }} сот.</p>
             <p class="mb-2"><small>Культуры:
                 {% for c in plot.cultures.all %}{{ c.name }}{% if not forloop.last %}, {% endif %}{% empty %}—{% endfor %}
