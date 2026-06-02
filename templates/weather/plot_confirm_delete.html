@@ -1,0 +1,10 @@
+{% extends 'base.html' %}
+{% block title %}Удаление участка{% endblock %}
+{% block content %}
+<h1>Удалить участок «{{ plot.name }}»?</h1>
+<p class="text-muted">Действие необратимо.</p>
+<form method="post">{% csrf_token %}
+    <button class="btn btn-danger" type="submit">Да, удалить</button>
+    <a href="{% url 'plot_list' %}" class="btn btn-link">Отмена</a>
+</form>
+{% endblock %}

@@ -1,8 +1,10 @@
 from datetime import timedelta
 import plotly.express as px
-from django.shortcuts import render, get_object_or_404
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import render, get_object_or_404, redirect
 from django.utils import timezone
-from .models import Culture, Region, WeatherRecord
+from .forms import GardenPlotForm
+from .models import Culture, Region, WeatherRecord, GardenPlot
 from .services.analytics import to_dataframe, region_stats
 
 
@@ -45,3 +47,43 @@ def region_detail(request, pk):
         'region': region, 'records': records,
         'chart_html': chart_html, 'stats': stats,
     })
+
+
+@login_required
+def plot_list(request):
+    plots = GardenPlot.objects.filter(user=request.user).select_related('region')
+    return render(request, 'weather/plot_list.html', {'plots': plots})
+
+
+@login_required
+def plot_create(request):
+    if request.method == 'POST':
+        form = GardenPlotForm(request.POST)
+        if form.is_valid():
+            plot = form.save(commit=False)
+            plot.user = request.user
+            plot.save()
+            form.save_m2m()
+            return redirect('plot_list')
+    else:
+        form = GardenPlotForm()
+    return render(request, 'weather/plot_form.html', {'form': form, 'title': 'Новый участок'})
+
+
+@login_required
+def plot_edit(request, pk):
+    plot = get_object_or_404(GardenPlot, pk=pk, user=request.user)
+    form = GardenPlotForm(request.POST or None, instance=plot)
+    if form.is_valid():
+        form.save()
+        return redirect('plot_list')
+    return render(request, 'weather/plot_form.html', {'form': form, 'title': 'Редактирование участка'})
+
+
+@login_required
+def plot_delete(request, pk):
+    plot = get_object_or_404(GardenPlot, pk=pk, user=request.user)
+    if request.method == 'POST':
+        plot.delete()
+        return redirect('plot_list')
+    return render(request, 'weather/plot_confirm_delete.html', {'plot': plot})

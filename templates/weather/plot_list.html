@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% block title %}Мои участки{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1>Мои участки</h1>
+    <a href="{% url 'plot_create' %}" class="btn btn-success">+ Новый участок</a>
+</div>
+<div class="row g-3">
+{% for plot in plots %}
+    <div class="col-md-6">
+        <div class="card p-3">
+            <h5>{{ plot.name }}</h5>
+            <p class="mb-1 small text-muted">{{ plot.region.name }} · {{ plot.area }} сот.</p>
+            <p class="mb-2"><small>Культуры:
+                {% for c in plot.cultures.all %}{{ c.name }}{% if not forloop.last %}, {% endif %}{% empty %}—{% endfor %}
+            </small></p>
+            <div>
+                <a href="{% url 'plot_edit' plot.pk %}" class="btn btn-sm btn-outline-primary">Изменить</a>
+                <a href="{% url 'plot_delete' plot.pk %}" class="btn btn-sm btn-outline-danger">Удалить</a>
+            </div>
+        </div>
+    </div>
+{% empty %}
+    <p>Пока нет участков. <a href="{% url 'plot_create' %}">Создать первый</a></p>
+{% endfor %}
+</div>
+{% endblock %}
