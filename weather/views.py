@@ -9,6 +9,7 @@ from django.utils import timezone
 from .forms import GardenPlotForm, PlantingForm
 from .models import Culture, Region, WeatherRecord, GardenPlot, Planting
 from .services.analytics import to_dataframe, region_stats
+from .services.recommendation_engine import generate_for_plot
 
 
 # ---------- Каталог культур ----------
@@ -89,6 +90,7 @@ def plot_detail(request, pk):
                 planting = form.save(commit=False)
                 planting.plot = plot
                 planting.save()
+                generate_for_plot(plot)
             return redirect('plot_detail', pk=plot.pk)
     else:
         form = PlantingForm()
@@ -137,10 +139,15 @@ def plot_delete(request, pk):
     return render(request, 'weather/plot_confirm_delete.html', {'plot': plot})
 
 
-# ---------- Подтверждение выхода ----------
+@login_required
+def plot_refresh(request, pk):
+    plot = get_object_or_404(GardenPlot, pk=pk, user=request.user)
+    if request.method == 'POST':
+        generate_for_plot(plot)
+    return redirect('plot_detail', pk=plot.pk)
 
-def logout_confirm(request):
-    return render(request, 'registration/logout_confirm.html')
+
+# ---------- Посадки на участке ----------
 
 @login_required
 def planting_toggle(request, pk):
@@ -153,13 +160,21 @@ def planting_toggle(request, pk):
             planting.status = Planting.Status.PLANNED
             planting.planted_date = None
         planting.save()
+        generate_for_plot(planting.plot)
     return redirect('plot_detail', pk=planting.plot.pk)
 
 
 @login_required
 def planting_delete(request, pk):
     planting = get_object_or_404(Planting, pk=pk, plot__user=request.user)
-    plot_pk = planting.plot.pk
+    plot = planting.plot
     if request.method == 'POST':
         planting.delete()
-    return redirect('plot_detail', pk=plot_pk)
+        generate_for_plot(plot)
+    return redirect('plot_detail', pk=plot.pk)
+
+
+# ---------- Подтверждение выхода ----------
+
+def logout_confirm(request):
+    return render(request, 'registration/logout_confirm.html')

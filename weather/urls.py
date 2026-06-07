@@ -14,4 +14,5 @@ urlpatterns = [
     path('plots/<int:pk>/', views.plot_detail, name='plot_detail'),
     path('plantings/<int:pk>/toggle/', views.planting_toggle, name='planting_toggle'),
     path('plantings/<int:pk>/delete/', views.planting_delete, name='planting_delete'),
+    path('plots/<int:pk>/refresh/', views.plot_refresh, name='plot_refresh')
 ]
