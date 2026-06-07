@@ -2,7 +2,7 @@ from datetime import timedelta
 
 import plotly.express as px
 from django.contrib.auth.decorators import login_required
-from django.db.models import Count
+from django.db.models import Count, Q
 from django.shortcuts import render, get_object_or_404, redirect
 from django.utils import timezone
 
@@ -17,7 +17,9 @@ def culture_list(request):
     query = request.GET.get('q', '').strip()
     cultures = Culture.objects.all()
     if query:
-        cultures = cultures.filter(name__icontains=query)
+        cultures = cultures.filter(
+            Q(name__icontains=query) | Q(description__icontains=query)
+        )
     return render(request, 'weather/culture_list.html', {'cultures': cultures})
 
 
